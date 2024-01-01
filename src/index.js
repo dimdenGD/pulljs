@@ -10,6 +10,7 @@ const _defaults = {
   triggerElement: 'body',
   ptrElement: '.ptr',
   classPrefix: 'ptr--',
+  backgroundColor: '#E0E0E0',
   cssProp: 'min-height',
   containerClassName: '',
   boxClassName: '',
@@ -21,6 +22,7 @@ const _defaults = {
   refreshTimeout: 500,
   onInit: () => {},
   onRefresh: () => location.reload(),
+  allowPull: () => true,
   resistanceFunction: t => Math.min(1, t / 2.5),
   ptrOnDesktop: false,
 };
@@ -72,6 +74,7 @@ function _setupEvents() {
   }
 
   function _onTouchStart(e) {
+    if(!_SETTINGS.allowPull()) return _onTouchEnd();
     const { triggerElement } = _SETTINGS;
 
     const screenY = e.touches ? e.touches[0].screenY : e.screenY;
@@ -96,6 +99,8 @@ function _setupEvents() {
   }
 
   function _onTouchMove(e) {
+    if(!_SETTINGS.allowPull()) return _onTouchEnd();
+    
     const {
       ptrElement, resistanceFunction, distMax, distThreshold, cssProp, classPrefix,
     } = _SETTINGS;
@@ -257,7 +262,7 @@ function _run() {
 const updateElement = () => {
   defaultStyle = `
     .${_SETTINGS.classPrefix}ptr {
-      background: #E0E0E0;
+      background: ${_SETTINGS.backgroundColor};
       pointer-events: none;
       font-size: 0.85em;
       font-weight: bold;
@@ -323,14 +328,16 @@ const Pull = {
     return {
       destroy() {
         // Teardown event listeners
-        window.removeEventListener('touchstart', handlers.onTouchStart);
-        window.removeEventListener('touchend', handlers.onTouchEnd);
-        window.removeEventListener('touchmove', handlers.onTouchMove);
-
-        if (_SETTINGS.ptrOnDesktop) {
-          window.removeEventListener('mouseup', handlers.onTouchEnd);
-          window.removeEventListener('mousedown', handlers.onTouchStart);
-          window.removeEventListener('mousemove', handlers.onTouchMove);
+        if(handlers) {
+          window.removeEventListener('touchstart', handlers.onTouchStart);
+          window.removeEventListener('touchend', handlers.onTouchEnd);
+          window.removeEventListener('touchmove', handlers.onTouchMove);
+  
+          if (_SETTINGS.ptrOnDesktop) {
+            window.removeEventListener('mouseup', handlers.onTouchEnd);
+            window.removeEventListener('mousedown', handlers.onTouchStart);
+            window.removeEventListener('mousemove', handlers.onTouchMove);
+          }
         }
 
         // Remove ptr element and style tag
